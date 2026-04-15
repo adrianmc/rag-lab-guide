@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hands-on Lab | RAG sobre Cloudera</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cldr-orange: #F96702;
+  --cldr-orange-light: #FF8534;
+  --cldr-teal: #1B5E7B;
+  --cldr-teal-dark: #0D3D56;
+  --cldr-teal-light: #2A8CB5;
+  --cldr-green: #4CAF50;
+  --cldr-green-bg: #E8F5E9;
+  --cldr-yellow-bg: #FFF8E1;
+  --cldr-red: #E53935;
+  --cldr-bg: #F7F9FB;
+  --cldr-surface: #FFFFFF;
+  --cldr-text: #1A2332;
+  --cldr-text-secondary: #5A6A7A;
+  --cldr-border: #E2E8F0;
+  --cldr-code-bg: #0F172A;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+  --shadow-lg: 0 4px 24px rgba(0,0,0,0.08);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  background: var(--cldr-bg);
+  color: var(--cldr-text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HEADER ── */
+.header {
+  background: linear-gradient(135deg, var(--cldr-teal-dark) 0%, var(--cldr-teal) 60%, var(--cldr-teal-light) 100%);
+  color: white;
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+}
+.header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.header-logo svg { height: 28px; }
+.header-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(255,255,255,0.3);
+}
+.header-title {
+  font-size: 15px;
+  font-weight: 500;
+  opacity: 0.9;
+  letter-spacing: 0.02em;
+}
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.12);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.header-user .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cldr-green);
+}
+
+/* ── HERO ── */
+.hero {
+  background: linear-gradient(135deg, var(--cldr-teal-dark) 0%, var(--cldr-teal) 50%, #1a7fa0 100%);
+  color: white;
+  padding: 80px 32px 60px;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: rgba(249,103,2,0.08);
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: -30%;
+  left: -10%;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.03);
+}
+.hero-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+.hero-badge {
+  display: inline-block;
+  background: var(--cldr-orange);
+  color: white;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+.hero h1 {
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 700;
+  line-height: 1.15;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--cldr-orange-light); }
+.hero p {
+  font-size: 18px;
+  opacity: 0.85;
+  max-width: 600px;
+  margin-bottom: 30px;
+}
+.hero-meta {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+.hero-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  opacity: 0.8;
+}
+.hero-meta-item svg { opacity: 0.6; }
+
+/* ── LOGIN OVERLAY ── */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(13,61,86,0.85);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s;
+}
+.login-card {
+  background: white;
+  border-radius: 16px;
+  padding: 48px 40px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.25);
+  text-align: center;
+}
+.login-card h2 {
+  font-size: 22px;
+  color: var(--cldr-teal-dark);
+  margin: 20px 0 8px;
+}
+.login-card p {
+  color: var(--cldr-text-secondary);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+.login-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--cldr-border);
+  border-radius: 10px;
+  font-size: 16px;
+  font-family: inherit;
+  appearance: none;
+  background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235A6A7A' stroke-width='2' fill='none'/%3E%3C/svg%3E") no-repeat right 16px center;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.login-select:focus {
+  outline: none;
+  border-color: var(--cldr-orange);
+}
+.login-btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 16px;
+  background: var(--cldr-orange);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.login-btn:hover { background: var(--cldr-orange-light); transform: translateY(-1px); }
+.login-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* ── PROGRESS BAR ── */
+.progress-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 32px 0;
+}
+.progress-bar-outer {
+  background: var(--cldr-border);
+  border-radius: 6px;
+  height: 8px;
+  overflow: hidden;
+}
+.progress-bar-inner {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cldr-orange), var(--cldr-orange-light));
+  border-radius: 6px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+  width: 0%;
+}
+.progress-text {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--cldr-text-secondary);
+}
+.progress-text strong { color: var(--cldr-orange); }
+
+/* ── MAIN CONTENT ── */
+.main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px;
+  display: none;
+}
+
+/* ── MODULE ── */
+.module {
+  margin-bottom: 40px;
+}
+.module-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  padding: 20px 24px;
+  background: var(--cldr-surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border-left: 4px solid var(--cldr-teal);
+  transition: all 0.2s;
+  user-select: none;
+}
+.module-header:hover { box-shadow: var(--shadow-lg); }
+.module-header.active { border-left-color: var(--cldr-orange); }
+.module-header.completed { border-left-color: var(--cldr-green); }
+.module-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--cldr-teal);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.module-header.completed .module-number { background: var(--cldr-green); }
+.module-header.active .module-number { background: var(--cldr-orange); }
+.module-info { flex: 1; }
+.module-info h2 { font-size: 18px; font-weight: 600; }
+.module-info p { font-size: 13px; color: var(--cldr-text-secondary); margin-top: 2px; }
+.module-chevron {
+  transition: transform 0.3s;
+  color: var(--cldr-text-secondary);
+}
+.module-header.open .module-chevron { transform: rotate(180deg); }
+.module-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+.module-body-inner {
+  padding: 24px 0;
+}
+
+/* ── STEP ── */
+.step {
+  background: var(--cldr-surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 16px;
+  border-left: 3px solid transparent;
+  transition: all 0.2s;
+}
+.step.done { border-left-color: var(--cldr-green); opacity: 0.85; }
+.step-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.step-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 2px solid var(--cldr-border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: all 0.2s;
+}
+.step-check:hover { border-color: var(--cldr-orange); }
+.step.done .step-check {
+  background: var(--cldr-green);
+  border-color: var(--cldr-green);
+}
+.step-check svg { display: none; }
+.step.done .step-check svg { display: block; }
+.step-num {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cldr-orange);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.step-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--cldr-teal-dark);
+}
+.step-content {
+  margin-top: 14px;
+  padding-left: 38px;
+  font-size: 15px;
+  color: var(--cldr-text);
+}
+.step-content p { margin-bottom: 10px; }
+.step-content strong { color: var(--cldr-teal-dark); }
+
+/* ── CODE BLOCK ── */
+.code-block {
+  background: var(--cldr-code-bg);
+  border-radius: 10px;
+  margin: 12px 0;
+  overflow: hidden;
+  position: relative;
+}
+.code-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  background: rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.code-block-lang {
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.code-copy-btn {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.6);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.code-copy-btn:hover {
+  background: rgba(255,255,255,0.15);
+  color: white;
+}
+.code-copy-btn.copied {
+  background: rgba(76,175,80,0.2);
+  border-color: rgba(76,175,80,0.3);
+  color: var(--cldr-green);
+}
+.code-block pre {
+  padding: 16px;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #E2E8F0;
+}
+.code-block .comment { color: #64748B; }
+.code-block .string { color: #86EFAC; }
+.code-block .keyword { color: #93C5FD; }
+.code-block .url { color: var(--cldr-orange-light); }
+
+/* ── TIP / WARNING / NOTE BOXES ── */
+.callout {
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin: 14px 0;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  font-size: 14px;
+}
+.callout-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.callout-tip { background: var(--cldr-green-bg); border: 1px solid #C8E6C9; }
+.callout-warn { background: var(--cldr-yellow-bg); border: 1px solid #FFF0B5; }
+.callout-info { background: #EAF3F7; border: 1px solid #B0D8E8; }
+
+/* ── USER PLACEHOLDER ── */
+.user-placeholder {
+  background: rgba(249,103,2,0.1);
+  color: var(--cldr-orange);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ── FOOTER ── */
+.footer {
+  text-align: center;
+  padding: 40px 32px;
+  color: var(--cldr-text-secondary);
+  font-size: 13px;
+  border-top: 1px solid var(--cldr-border);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: slideUp 0.4s ease-out both; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 640px) {
+  .header-inner { padding: 12px 16px; }
+  .header-title { display: none; }
+  .hero { padding: 60px 20px 40px; }
+  .main { padding: 20px 16px; }
+  .module-header { padding: 16px; }
+  .step { padding: 18px; }
+  .step-content { padding-left: 0; }
+  .hero-meta { gap: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN OVERLAY ═══ -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="12" fill="#1B5E7B"/><path d="M14 24C14 18.477 18.477 14 24 14C29.523 14 34 18.477 34 24" stroke="white" stroke-width="3" stroke-linecap="round"/><path d="M34 24C34 29.523 29.523 34 24 34C18.477 34 14 29.523 14 24" stroke="#F96702" stroke-width="3" stroke-linecap="round"/></svg>
+    <h2>Bienvenido al Lab</h2>
+    <p>Selecciona tu usuario asignado para comenzar</p>
+    <select class="login-select" id="userSelect">
+      <option value="">Seleccionar usuario...</option>
+    </select>
+    <button class="login-btn" id="loginBtn" disabled>Ingresar al Lab</button>
+  </div>
+</div>
+
+<!-- ═══ HEADER ═══ -->
+<header class="header">
+  <div class="header-inner">
+    <div class="header-logo">
+      <svg viewBox="0 0 140 28" fill="none" height="28">
+        <text x="0" y="22" font-family="DM Sans, sans-serif" font-weight="700" font-size="22" fill="white">cloudera</text>
+      </svg>
+      <div class="header-divider"></div>
+      <span class="header-title">Hands-on Lab: RAG</span>
+    </div>
+    <div class="header-user" id="headerUser" style="display:none">
+      <span class="dot"></span>
+      <span id="headerUserName"></span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">Hands-on Lab</div>
+    <h1>Arquitecturas <span>RAG</span><br>sobre Cloudera</h1>
+    <p>Construye un chatbot con IA Generativa usando Retrieval-Augmented Generation en Cloudera Machine Learning.</p>
+    <div class="hero-meta">
+      <div class="hero-meta-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        3 horas
+      </div>
+      <div class="hero-meta-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        20 participantes
+      </div>
+      <div class="hero-meta-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        CDP Public Cloud
+      </div>
+      <div class="hero-meta-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        Milvus + h2ogpt
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PROGRESS ═══ -->
+<div class="progress-wrap" id="progressWrap" style="display:none">
+  <div class="progress-bar-outer"><div class="progress-bar-inner" id="progressBar"></div></div>
+  <div class="progress-text">
+    <span><strong id="progressCount">0</strong> de <strong id="progressTotal">0</strong> pasos completados</span>
+    <span id="progressPct">0%</span>
+  </div>
+</div>
+
+<!-- ═══ MAIN CONTENT ═══ -->
+<div class="main" id="mainContent"></div>
+
+<!-- ═══ FOOTER ═══ -->
+<div class="footer" id="footer" style="display:none">
+  Cloudera Solutions Engineering &middot; Fork: <a href="https://github.com/adrianmc/CML_AMP_LLM_Chatbot_Augmented_with_Enterprise_Data" target="_blank" style="color:var(--cldr-orange)">adrianmc/CML_AMP_LLM_Chatbot</a> &middot; 2026
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// LAB DATA
+// ═══════════════════════════════════════
+const MODULES = [
+  {
+    id: "theory",
+    title: "Fundamentos Teóricos",
+    time: "30 min",
+    steps: [
+      {
+        title: "¿Qué es RAG?",
+        content: `<p>Retrieval-Augmented Generation (RAG) combina la capacidad generativa de un LLM con un sistema de búsqueda sobre datos propios de la empresa.</p>
+<p>En lugar de depender del conocimiento entrenado del modelo, RAG <strong>recupera fragmentos relevantes</strong> de una base de conocimiento y los inyecta como contexto en el prompt antes de generar la respuesta.</p>
+<p>Esto resuelve tres problemas fundamentales:</p>
+<p><strong>Alucinaciones:</strong> Al anclar respuestas en documentos reales, se reduce la generación de información falsa.</p>
+<p><strong>Datos desactualizados:</strong> La base de conocimiento se actualiza sin necesidad de re-entrenar el modelo.</p>
+<p><strong>Datos privados:</strong> Los documentos corporativos nunca salen de la infraestructura de la empresa.</p>`
+      },
+      {
+        title: "Componentes de la Arquitectura RAG",
+        content: `<p>Una arquitectura RAG tiene cinco componentes en secuencia:</p>
+<p><strong>1. Document Loader:</strong> Ingesta y segmentación de documentos (PDFs, TXT) en fragmentos manejables.</p>
+<p><strong>2. Embedding Model:</strong> Convierte cada fragmento en un vector numérico de alta dimensión. Usamos <strong>all-MiniLM-L6-v2</strong> (384 dimensiones).</p>
+<p><strong>3. Vector Store:</strong> Base de datos para búsqueda por similitud. Usamos <strong>Milvus</strong> integrado en el AMP.</p>
+<p><strong>4. Retriever:</strong> Convierte la pregunta en vector, busca los k fragmentos más similares y los devuelve como contexto.</p>
+<p><strong>5. LLM (Generador):</strong> Recibe el prompt + fragmentos recuperados y genera la respuesta. Usamos <strong>h2ogpt-oig-oasst1-512-6.9b</strong>.</p>`
+      },
+      {
+        title: "CML y la Arquitectura RAG",
+        content: `<p>Cloudera Machine Learning (CML) provee la plataforma unificada para construir y desplegar soluciones RAG empresariales:</p>
+<p><strong>Applied ML Prototypes (AMPs):</strong> Proyectos preconfigurados listos para desplegar.</p>
+<p><strong>Sessions & Jobs:</strong> Entornos interactivos para desarrollo y ejecución de pipelines.</p>
+<p><strong>Applications:</strong> Despliegue de apps web (Gradio) con acceso a GPU.</p>
+<p><strong>GPU Acceleration:</strong> Soporte nativo para NVIDIA GPUs para inferencia local.</p>
+<p><strong>SDX (Seguridad):</strong> Control de acceso, auditoría y lineage integrados.</p>
+<div class="callout callout-tip"><span class="callout-icon">💡</span><span>Toda la lógica de RAG se ejecuta dentro de CML. Los documentos nunca salen de la infraestructura de CDP.</span></div>`
+      },
+      {
+        title: "Flujo de Datos del Lab",
+        content: `<p><strong>Fase de Ingesta:</strong></p>
+<p>PDF → pdfminer (extracción de texto) → Sentence Transformer (embeddings 384-dim) → Milvus Vector DB</p>
+<p><strong>Fase de Consulta:</strong></p>
+<p>Pregunta del usuario → Embedding de la pregunta → Búsqueda de similitud en Milvus → Top-k documentos relevantes → Prompt enriquecido → LLM → Respuesta generada</p>
+<div class="callout callout-info"><span class="callout-icon">🎯</span><span>Al finalizar el lab, cada participante tendrá un chatbot funcional basado en RAG corriendo en CML, capaz de responder preguntas sobre documentos corporativos.</span></div>`
+      }
+    ]
+  },
+  {
+    id: "env",
+    title: "Acceso al Entorno",
+    time: "15 min",
+    steps: [
+      {
+        title: "Acceder a CDP Public Cloud",
+        content: `<p>Abrir el navegador y navegar a la URL de CDP proporcionada por el facilitador:</p>
+${codeBlock("https://<cdp-console>.cloudera.site", "url")}
+<p>Iniciar sesión con las credenciales asignadas. Si tu organización usa SSO, seleccionar el proveedor de identidad correspondiente.</p>
+<div class="callout callout-warn"><span class="callout-icon">⚠️</span><span>Si ves un error de permisos, contactar al facilitador para verificar la asignación de roles.</span></div>`
+      },
+      {
+        title: "Navegar a Cloudera Machine Learning",
+        content: `<p>En la consola de CDP, hacer clic en el ícono de la cuadrícula (grid) en la esquina superior izquierda.</p>
+<p>Seleccionar <strong>"Machine Learning"</strong> de la lista de servicios.</p>
+<p>En la página de ML Workspaces, localizar el workspace asignado para el lab.</p>
+<p>Hacer clic en el nombre del workspace para acceder a la interfaz de CML.</p>`
+      },
+      {
+        title: "Verificar Recursos Disponibles",
+        content: `<p>Una vez dentro del workspace CML, ir a <strong>"Site Administration" > "Runtime/Engine"</strong>.</p>
+<p>Confirmar que aparecen runtimes de Python 3.10+ y que hay GPUs disponibles.</p>
+${codeBlock("GPU disponibles: al menos 1x NVIDIA T4\nvCPU: al menos 4 cores disponibles\nMemoria: al menos 16 GB disponibles", "text")}
+<div class="callout callout-warn"><span class="callout-icon">⚠️</span><span>Si los recursos están al máximo, notificar al facilitador antes de continuar.</span></div>`
+      }
+    ]
+  },
+  {
+    id: "module1",
+    title: "Crear Proyecto desde Git Fork",
+    time: "30 min",
+    steps: [
+      {
+        title: "Crear Nuevo Proyecto desde Git URL",
+        content: `<p>En la interfaz principal de CML, hacer clic en <strong>"New Project"</strong>.</p>
+<p>Seleccionar <strong>"Git"</strong> como origen del proyecto.</p>
+<p>Completar los campos:</p>
+${codeBlock('Project Name: rag-chatbot-{{USER}}\n\nGit URL:\nhttps://github.com/adrianmc/CML_AMP_LLM_Chatbot_Augmented_with_Enterprise_Data.git\n\nBranch: main', "text")}
+<p>Hacer clic en <strong>"Create Project"</strong>.</p>
+<div class="callout callout-info"><span class="callout-icon">💡</span><span>Usamos este fork en lugar del AMP original del catálogo porque incluye correcciones para soporte de PDFs, limpieza UTF-8, y el bug de import sys.</span></div>`
+      },
+      {
+        title: "Configurar y Ejecutar el AMP",
+        content: `<p>CML detectará automáticamente la configuración del AMP (archivo project-metadata.yaml).</p>
+<p>Si CML ofrece ejecutar el AMP automáticamente, aceptar. Si no, ir a la pestaña "Overview" y hacer clic en <strong>"Configure AMP"</strong>.</p>
+<p>El AMP ejecutará los siguientes pasos automáticamente:</p>
+${codeBlock("Paso 0: Validate GPU Availibility  → Verifica GPUs\nPaso 1: Install Dependencies        → pip install\nPaso 2: Download Models              → Descarga LLM + embeddings\nPaso 3: Populate Vector DB           → Ingesta docs → Milvus\nPaso 4: Deploy Application           → Lanza Gradio app", "text")}
+<div class="callout callout-warn"><span class="callout-icon">⏰</span><span><strong>El paso 2 puede tardar 10-15 minutos.</strong> El modelo h2ogpt pesa ~13GB. Aprovecha para revisar la estructura del proyecto en la pestaña "Files".</span></div>`
+      },
+      {
+        title: "Verificar el Despliegue",
+        content: `<p>En el menú lateral del proyecto, ir a <strong>"Jobs"</strong> para monitorear el progreso.</p>
+<p>Esperar a que todos los jobs muestren estado <strong>"Succeeded"</strong> (marca verde).</p>
+<p>Si algún job falla, hacer clic en él para ver los logs. Los errores más comunes:</p>
+<p><strong>Paso 0 falla:</strong> Verificar que el workspace tenga GPUs habilitadas.</p>
+<p><strong>Paso 2 falla:</strong> Verificar cuota de almacenamiento y acceso a Hugging Face.</p>`
+      },
+      {
+        title: "Explorar la Estructura del Proyecto",
+        content: `<p>Ir a <strong>"Files"</strong> en el menú lateral. La estructura clave es:</p>
+${codeBlock("rag-chatbot-{{USER}}/\n├── 0_session-resource-validation/  # Validación de GPU\n├── 1_session-install-deps/         # Instalación de deps\n├── 2_job-download-models/          # Descarga del LLM\n├── 3_job-populate-vectordb/\n│   └── vectordb_insert.py          # Ingesta original (.txt)\n├── 4_app/\n│   └── llm_rag_app.py              # App del chatbot (modificada)\n├── load_custom_docs.py             # Ingesta mejorada (.txt + .pdf)\n├── data/                           # Documentos de ejemplo\n├── utils/                          # Embeddings y modelo LLM\n├── models/                         # Modelos descargados\n└── milvus-data/                    # Datos del Vector DB", "text")}`
+      }
+    ]
+  },
+  {
+    id: "module2",
+    title: "Ingesta de Documentos y Vector DB",
+    time: "30 min",
+    steps: [
+      {
+        title: "Subir Documentos PDF al Proyecto",
+        content: `<p>Preparar 2-3 documentos PDF que quieras usar como base de conocimiento.</p>
+<p>Ir a <strong>"Files"</strong> en el menú del proyecto.</p>
+<p>Navegar a la carpeta <strong>data/</strong> y crear una subcarpeta:</p>
+${codeBlock("data/custom_docs/", "text")}
+<p>Hacer clic en <strong>"Upload"</strong> y seleccionar tus PDFs.</p>
+<div class="callout callout-info"><span class="callout-icon">📄</span><span>Tamaño máximo recomendado: 10 MB por archivo. Documentos de 5-20 páginas funcionan mejor para esta demo.</span></div>`
+      },
+      {
+        title: "Iniciar Sesión CML",
+        content: `<p>Ir a <strong>"Sessions"</strong> en el menú lateral del proyecto.</p>
+<p>Hacer clic en <strong>"New Session"</strong> con la siguiente configuración:</p>
+${codeBlock("Session Name: ingesta-docs\nRuntime: Python 3.10+\nEditor: Workbench\nResource Profile:\n  vCPU: 2\n  Memory: 8 GiB\n  GPU: 0 (no necesitamos GPU para ingesta)", "text")}
+<p>Hacer clic en <strong>"Start Session"</strong> y esperar a que el entorno inicie.</p>`
+      },
+      {
+        title: "Instalar Dependencia para PDFs",
+        content: `<p>En la terminal de la sesión CML, instalar pdfminer.six:</p>
+${codeBlock("pip install pdfminer.six", "bash")}
+<div class="callout callout-info"><span class="callout-icon">💡</span><span>pdfminer.six es la librería que load_custom_docs.py usa para extraer texto de archivos PDF.</span></div>`
+      },
+      {
+        title: "Entender el Script load_custom_docs.py",
+        content: `<p>El script <strong>load_custom_docs.py</strong> ya viene incluido en el fork. Ábrelo en el editor para entender su lógica:</p>
+<p><strong>Puntos clave:</strong></p>
+<p>1) Reutiliza <code>create_milvus_collection()</code> e <code>insert_embedding()</code> del AMP original.</p>
+<p>2) Recorre recursivamente ./data/ buscando archivos .txt y .pdf.</p>
+<p>3) Para PDFs usa pdfminer para convertir el contenido a texto.</p>
+<p>4) Limpia caracteres no-UTF8 para evitar errores de decodificación.</p>
+<p>5) Genera un embedding de 384 dimensiones por cada documento.</p>
+<div class="callout callout-tip"><span class="callout-icon">✅</span><span>Al usar la misma colección 'cloudera_ml_docs', los documentos nuevos conviven con los originales y el chatbot los encuentra automáticamente.</span></div>`
+      },
+      {
+        title: "Ejecutar la Ingesta",
+        content: `<p>Ejecutar el script desde la raíz del proyecto:</p>
+${codeBlock("cd /home/cdsw\npython load_custom_docs.py", "bash")}
+<p>Deberías ver la salida procesando cada archivo:</p>
+${codeBlock("Milvus up - collection created\nEmbedding TXT: iceberg-snippet.txt\nEmbedding TXT: ml-product-overview.txt\n...\nEmbedding PDF: tu-documento-custom.pdf\n...\nTotal embeddings: 15\nFinished loading knowledge base", "output")}
+<p><strong>El número total debe ser mayor que 13</strong> (los originales) si añadiste PDFs.</p>`
+      },
+      {
+        title: "Verificar la Ingesta en Milvus",
+        content: `<p>Para confirmar que los documentos fueron indexados, ejecutar:</p>
+${codeBlock('python -c "\nfrom milvus import default_server\nfrom pymilvus import connections, Collection\ndefault_server.set_base_dir(\'milvus-data\')\ndefault_server.start()\nconnections.connect(\'default\', host=\'localhost\',\n  port=default_server.listen_port)\ncol = Collection(\'cloudera_ml_docs\')\ncol.load()\nprint(f\'Total docs: {col.num_entities}\')\ndefault_server.stop()\n"', "python")}
+<p>Deberías ver un número positivo que incluya tus PDFs.</p>`
+      }
+    ]
+  },
+  {
+    id: "module3",
+    title: "Entender Mejoras y Desplegar Chatbot",
+    time: "30 min",
+    steps: [
+      {
+        title: "Entender las Modificaciones del Fork",
+        content: `<p>El fork ya incluye las modificaciones necesarias en <strong>4_app/llm_rag_app.py</strong>. Abre el archivo para entender qué se cambió.</p>
+<p><strong>Código ORIGINAL del AMP de Cloudera:</strong></p>
+${codeBlock("def load_context_chunk_from_data(id_path):\n    with open(id_path, 'r') as f:\n        return f.read()", "python")}
+<p><strong>Código MODIFICADO en el fork:</strong></p>
+${codeBlock("def load_context_chunk_from_data(id_path):\n    if id_path.endswith('.pdf'):\n        from pdfminer.high_level import extract_text\n        text = extract_text(id_path)\n    else:\n        with open(id_path, 'r', errors='ignore') as f:\n            text = f.read()\n    text = text.encode('utf-8',\n        errors='ignore').decode('utf-8')\n    return text[:2000]", "python")}
+<p><strong>Las tres mejoras:</strong></p>
+<p>1) <strong>Soporte PDF:</strong> usa pdfminer cuando Milvus devuelve un path a un .pdf.</p>
+<p>2) <strong>Limpieza UTF-8:</strong> los .txt originales tienen bytes inválidos que causan UnicodeDecodeError.</p>
+<p>3) <strong>Truncado a 2000 chars:</strong> sin este límite, un PDF completo causa CUDA out of memory en la T4.</p>
+<div class="callout callout-info"><span class="callout-icon">🔧</span><span>Estos son problemas reales que encontrarías en cualquier implementación RAG empresarial: datos sucios, formatos mixtos, y límites de contexto del modelo.</span></div>`
+      },
+      {
+        title: "Configurar la Aplicación con GPU",
+        content: `<p>Ir a <strong>"Applications"</strong> en el menú lateral del proyecto.</p>
+<p>Si la aplicación ya existe pero está sin GPU, detenerla primero.</p>
+<p>Crear o editar la aplicación:</p>
+${codeBlock("Name: rag-chatbot\nSubdomain: chatbot-{{USER}}\nScript: 4_app/llm_rag_app.py\nResource Profile:\n  vCPU: 2\n  Memory: 16 GiB\n  GPU: 1", "text")}
+<div class="callout callout-warn"><span class="callout-icon">⚠️</span><span><strong>La aplicación DEBE tener 1 GPU.</strong> Sin GPU, el modelo no puede generar respuestas. Cierra cualquier sesión CML con GPU antes de iniciar la app.</span></div>`
+      },
+      {
+        title: "Verificar que el Chatbot Funciona",
+        content: `<p>Esperar a que la aplicación muestre estado <strong>"Running"</strong> (2-3 minutos).</p>
+<p>Hacer clic en el enlace de la aplicación para abrir el chatbot.</p>
+<p>Probar primero con una pregunta predefinida:</p>
+${codeBlock("What are iceberg tables?", "text")}
+<p>Luego probar con una pregunta sobre tus documentos PDF.</p>
+<div class="callout callout-tip"><span class="callout-icon">🚀</span><span><strong>La primera consulta tarda 30-60 segundos</strong> mientras el modelo se carga en la GPU. Las siguientes serán mucho más rápidas (5-15s).</span></div>`
+      }
+    ]
+  },
+  {
+    id: "module4",
+    title: "Pruebas, Ajustes y Demo",
+    time: "15 min",
+    steps: [
+      {
+        title: "Realizar Pruebas",
+        content: `<p>En la interfaz del chatbot, probar con diferentes tipos de preguntas:</p>
+<p><strong>Pregunta directa</strong> (debería responder con info de tus docs):</p>
+${codeBlock("¿Cuáles son los puntos principales del documento?", "text")}
+<p><strong>Pregunta fuera de contexto</strong> (debería decir que no tiene info):</p>
+${codeBlock("¿Cuál es la receta de la paella valenciana?", "text")}
+<p>Observar la diferencia entre <strong>"Asking LLM with No Context"</strong> y <strong>"Asking LLM with Context (RAG)"</strong>.</p>`
+      },
+      {
+        title: "Experimentar con Parámetros",
+        content: `<p>Modificar parámetros en <strong>4_app/llm_rag_app.py</strong> para ver el efecto:</p>
+<p><strong>Parámetro 1: limit</strong> (documentos recuperados de Milvus)</p>
+${codeBlock("# En get_nearest_chunk_from_vectordb():\nlimit=1   # Default: solo 1 documento\nlimit=3   # Probar con más documentos", "python")}
+<p><strong>Parámetro 2: Temperature</strong></p>
+${codeBlock("# En get_llm_response():\ntemperature=0.1  # Más preciso\ntemperature=0.7  # Más variado (actual)", "python")}
+<p><strong>Parámetro 3: Truncado del contexto</strong></p>
+${codeBlock("# En load_context_chunk_from_data():\nreturn text[:2000]  # ~500 tokens (actual)\nreturn text[:4000]  # ~1000 tokens\n# Ojo: valores muy altos causan CUDA OOM en T4", "python")}
+<p>Después de cada cambio, reiniciar la aplicación y probar de nuevo.</p>`
+      },
+      {
+        title: "Demo Grupal y Cierre",
+        content: `<p>Compartir la URL de tu aplicación con un compañero para que pruebe tu chatbot.</p>
+<p>Comparar resultados entre participantes con diferentes documentos y configuraciones.</p>
+<p><strong>Preguntas de reflexión:</strong></p>
+${codeBlock("1. ¿Qué tipo de preguntas responde bien el chatbot?\n2. ¿Dónde falla o da respuestas incompletas?\n3. ¿Cómo mejorarías la calidad del chunking?\n4. ¿Qué pasaría con documentos de 500 páginas?\n5. ¿Cómo añadirías autenticación al chatbot?", "text")}
+<div class="callout callout-tip"><span class="callout-icon">🎉</span><span><strong>¡Felicidades!</strong> Ahora tienes las bases para construir soluciones de IA Generativa empresarial con RAG sobre Cloudera.</span></div>`
+      }
+    ]
+  }
+];
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function codeBlock(code, lang) {
+  return `<div class="code-block">
+    <div class="code-block-header">
+      <span class="code-block-lang">${lang}</span>
+      <button class="code-copy-btn" onclick="copyCode(this)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar
+      </button>
+    </div>
+    <pre>${escapeHtml(code)}</pre>
+  </div>`;
+}
+
+function escapeHtml(text) {
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ═══════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════
+let currentUser = '';
+let completedSteps = new Set();
+let totalSteps = 0;
+
+// ═══════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════
+const userSelect = document.getElementById('userSelect');
+const loginBtn = document.getElementById('loginBtn');
+
+for (let i = 1; i <= 20; i++) {
+  const opt = document.createElement('option');
+  opt.value = `user${String(i).padStart(3,'0')}`;
+  opt.textContent = `user${String(i).padStart(3,'0')}`;
+  userSelect.appendChild(opt);
+}
+
+userSelect.addEventListener('change', () => {
+  loginBtn.disabled = !userSelect.value;
+});
+
+loginBtn.addEventListener('click', () => {
+  currentUser = userSelect.value;
+  document.getElementById('loginOverlay').style.display = 'none';
+  document.getElementById('headerUser').style.display = 'flex';
+  document.getElementById('headerUserName').textContent = currentUser;
+  document.getElementById('progressWrap').style.display = 'block';
+  document.getElementById('footer').style.display = 'block';
+  const main = document.getElementById('mainContent');
+  main.style.display = 'block';
+
+  // Load saved progress
+  const saved = localStorage.getItem(`rag-lab-${currentUser}`);
+  if (saved) completedSteps = new Set(JSON.parse(saved));
+
+  renderModules();
+  updateProgress();
+});
+
+// ═══════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════
+function renderModules() {
+  const main = document.getElementById('mainContent');
+  let stepIndex = 0;
+  totalSteps = MODULES.reduce((acc, m) => acc + m.steps.length, 0);
+  document.getElementById('progressTotal').textContent = totalSteps;
+
+  main.innerHTML = MODULES.map((mod, mi) => {
+    const stepsHtml = mod.steps.map((step, si) => {
+      const globalIdx = stepIndex++;
+      const isDone = completedSteps.has(globalIdx);
+      const content = step.content.replace(/\{\{USER\}\}/g, currentUser);
+      return `<div class="step ${isDone ? 'done' : ''}" data-step="${globalIdx}">
+        <div class="step-top">
+          <div class="step-check" onclick="toggleStep(${globalIdx})">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+          <div>
+            <div class="step-num">Paso ${globalIdx + 1}</div>
+            <div class="step-title">${step.title}</div>
+          </div>
+        </div>
+        <div class="step-content">${content}</div>
+      </div>`;
+    }).join('');
+
+    const allDone = mod.steps.every((_, si) => {
+      const base = MODULES.slice(0, mi).reduce((a, m) => a + m.steps.length, 0);
+      return completedSteps.has(base + si);
+    });
+
+    return `<div class="module fade-in" style="animation-delay:${mi * 0.08}s">
+      <div class="module-header ${allDone ? 'completed' : ''}" onclick="toggleModule(${mi})" id="mh-${mi}">
+        <div class="module-number">${allDone ? '✓' : mi + 1}</div>
+        <div class="module-info">
+          <h2>${mod.title}</h2>
+          <p>${mod.time} · ${mod.steps.length} pasos</p>
+        </div>
+        <svg class="module-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="module-body" id="mb-${mi}">
+        <div class="module-body-inner">${stepsHtml}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleModule(idx) {
+  const header = document.getElementById(`mh-${idx}`);
+  const body = document.getElementById(`mb-${idx}`);
+  const isOpen = header.classList.contains('open');
+
+  // Close all
+  document.querySelectorAll('.module-header').forEach(h => h.classList.remove('open', 'active'));
+  document.querySelectorAll('.module-body').forEach(b => b.style.maxHeight = null);
+
+  if (!isOpen) {
+    header.classList.add('open', 'active');
+    body.style.maxHeight = body.scrollHeight + 'px';
+  }
+}
+
+function toggleStep(idx) {
+  if (completedSteps.has(idx)) {
+    completedSteps.delete(idx);
+  } else {
+    completedSteps.add(idx);
+  }
+  localStorage.setItem(`rag-lab-${currentUser}`, JSON.stringify([...completedSteps]));
+
+  const stepEl = document.querySelector(`.step[data-step="${idx}"]`);
+  stepEl.classList.toggle('done');
+  updateProgress();
+  updateModuleHeaders();
+}
+
+function updateProgress() {
+  const count = completedSteps.size;
+  const pct = Math.round((count / totalSteps) * 100);
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressCount').textContent = count;
+  document.getElementById('progressPct').textContent = pct + '%';
+}
+
+function updateModuleHeaders() {
+  let base = 0;
+  MODULES.forEach((mod, mi) => {
+    const allDone = mod.steps.every((_, si) => completedSteps.has(base + si));
+    const header = document.getElementById(`mh-${mi}`);
+    header.classList.toggle('completed', allDone);
+    header.querySelector('.module-number').textContent = allDone ? '✓' : mi + 1;
+    base += mod.steps.length;
+  });
+}
+
+function copyCode(btn) {
+  const pre = btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.textContent).then(() => {
+    btn.classList.add('copied');
+    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Copiado`;
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copiar`;
+    }, 2000);
+  });
+}
+</script>
+</body>
+</html>
